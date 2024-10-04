@@ -25,5 +25,4 @@ overview:
    __future__.rst
    gc.rst
    inspect.rst
-   annotationlib.rst
    site.rst

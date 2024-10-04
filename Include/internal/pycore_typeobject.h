@@ -33,6 +33,7 @@ struct _types_runtime_state {
     struct {
         struct {
             PyTypeObject *type;
+            PyTypeObject def;
             int64_t interp_count;
         } types[_Py_MAX_MANAGED_STATIC_TYPES];
     } managed_static;
@@ -182,9 +183,6 @@ PyAPI_FUNC(int) _PyStaticType_InitForExtension(
     PyInterpreterState *interp,
      PyTypeObject *self);
 
-// Export for _testinternalcapi extension.
-PyAPI_FUNC(PyObject *) _PyStaticType_GetBuiltins(void);
-
 
 /* Like PyType_GetModuleState, but skips verification
  * that type is a heap type with an associated module */
@@ -209,9 +207,7 @@ extern PyObject * _PyType_GetBases(PyTypeObject *type);
 extern PyObject * _PyType_GetMRO(PyTypeObject *type);
 extern PyObject* _PyType_GetSubclasses(PyTypeObject *);
 extern int _PyType_HasSubclasses(PyTypeObject *);
-
-// Export for _testinternalcapi extension.
-PyAPI_FUNC(PyObject *) _PyType_GetSlotWrapperNames(void);
+PyAPI_FUNC(PyObject *) _PyType_GetModuleByDef2(PyTypeObject *, PyTypeObject *, PyModuleDef *);
 
 // PyType_Ready() must be called if _PyType_IsReady() is false.
 // See also the Py_TPFLAGS_READY flag.

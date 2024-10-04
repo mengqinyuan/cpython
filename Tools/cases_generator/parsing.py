@@ -66,7 +66,6 @@ class Node:
         assert context is not None
         return context.owner.tokens[context.begin]
 
-
 @dataclass
 class Block(Node):
     # This just holds a context which has the list of tokens.
@@ -148,7 +147,6 @@ class Pseudo(Node):
     outputs: list[OutputEffect]
     flags: list[str]  # instr flags to set on the pseudo instruction
     targets: list[str]  # opcodes this can be replaced by
-    as_sequence: bool
 
 
 AstNode = InstDef | Macro | Pseudo | Family
@@ -424,22 +422,14 @@ class Parser(PLexer):
                             flags = []
                         if self.expect(lx.RPAREN):
                             if self.expect(lx.EQUALS):
-                                if self.expect(lx.LBRACE):
-                                    as_sequence = False
-                                    closing = lx.RBRACE
-                                elif self.expect(lx.LBRACKET):
-                                    as_sequence = True
-                                    closing = lx.RBRACKET
-                                else:
-                                    raise self.make_syntax_error("Expected { or [")
-                                if members := self.members(allow_sequence=True):
-                                    if self.expect(closing) and self.expect(lx.SEMI):
-                                        return Pseudo(
-                                            tkn.text, inp, outp, flags, members, as_sequence
-                                        )
+                                if not self.expect(lx.LBRACE):
+                                    raise self.make_syntax_error("Expected {")
+                                if members := self.members():
+                                    if self.expect(lx.RBRACE) and self.expect(lx.SEMI):
+                                        return Pseudo(tkn.text, inp, outp, flags, members)
         return None
 
-    def members(self, allow_sequence : bool=False) -> list[str] | None:
+    def members(self) -> list[str] | None:
         here = self.getpos()
         if tkn := self.expect(lx.IDENTIFIER):
             members = [tkn.text]
@@ -449,10 +439,8 @@ class Parser(PLexer):
                 else:
                     break
             peek = self.peek()
-            kinds = [lx.RBRACE, lx.RBRACKET] if allow_sequence else [lx.RBRACE]
-            if not peek or peek.kind not in kinds:
-                raise self.make_syntax_error(
-                    f"Expected comma or right paren{'/bracket' if allow_sequence else ''}")
+            if not peek or peek.kind != lx.RBRACE:
+                raise self.make_syntax_error("Expected comma or right paren")
             return members
         self.setpos(here)
         return None

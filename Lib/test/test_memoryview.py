@@ -18,10 +18,6 @@ import struct
 from test.support import import_helper
 
 
-class MyObject:
-    pass
-
-
 class AbstractMemoryTests:
     source_bytes = b"abcdef"
 
@@ -231,6 +227,8 @@ class AbstractMemoryTests:
                 def __init__(self, base):
                     self.m = memoryview(base)
             class MySource(tp):
+                pass
+            class MyObject:
                 pass
 
             # Create a reference cycle through a memoryview object.
@@ -657,27 +655,6 @@ class OtherTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "operation forbidden"):
             m[0] = MyBool()
         self.assertEqual(ba[:8], b'\0'*8)
-
-    def test_buffer_reference_loop(self):
-        m = memoryview(b'abc').__buffer__(0)
-        o = MyObject()
-        o.m = m
-        o.o = o
-        wr = weakref.ref(o)
-        del m, o
-        gc.collect()
-        self.assertIsNone(wr())
-
-    def test_picklebuffer_reference_loop(self):
-        pb = pickle.PickleBuffer(memoryview(b'abc'))
-        o = MyObject()
-        o.pb = pb
-        o.o = o
-        wr = weakref.ref(o)
-        del pb, o
-        gc.collect()
-        self.assertIsNone(wr())
-
 
 if __name__ == "__main__":
     unittest.main()

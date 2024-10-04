@@ -11,13 +11,13 @@ __all__ = [ 'Client', 'Listener', 'Pipe', 'wait' ]
 
 import errno
 import io
-import itertools
 import os
 import sys
 import socket
 import struct
-import tempfile
 import time
+import tempfile
+import itertools
 
 
 from . import util
@@ -39,9 +39,7 @@ except ImportError:
 #
 #
 
-# 64 KiB is the default PIPE buffer size of most POSIX platforms.
-BUFSIZE = 64 * 1024
-
+BUFSIZE = 8192
 # A very generous timeout when it comes to local connections...
 CONNECTION_TIMEOUT = 20.
 
@@ -394,8 +392,7 @@ class Connection(_ConnectionBase):
         handle = self._handle
         remaining = size
         while remaining > 0:
-            to_read = min(BUFSIZE, remaining)
-            chunk = read(handle, to_read)
+            chunk = read(handle, remaining)
             n = len(chunk)
             if n == 0:
                 if remaining == size:

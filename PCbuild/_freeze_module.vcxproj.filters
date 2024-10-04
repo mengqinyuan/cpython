@@ -97,9 +97,6 @@
     <ClCompile Include="..\Python\perf_jit_trampoline.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\Python\codegen.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\Python\compile.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -467,7 +464,7 @@
     <ClCompile Include="..\Python\tracemalloc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\Python\uniqueid.c">
+    <ClCompile Include="..\Python\typeid.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\Objects\tupleobject.c">

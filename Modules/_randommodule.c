@@ -295,8 +295,7 @@ random_seed(RandomObject *self, PyObject *arg)
     int result = -1;  /* guilty until proved innocent */
     PyObject *n = NULL;
     uint32_t *key = NULL;
-    int64_t bits;
-    size_t keyused;
+    size_t bits, keyused;
     int res;
 
     if (arg == NULL || arg == Py_None) {
@@ -335,11 +334,11 @@ random_seed(RandomObject *self, PyObject *arg)
 
     /* Now split n into 32-bit chunks, from the right. */
     bits = _PyLong_NumBits(n);
-    assert(bits >= 0);
-    assert(!PyErr_Occurred());
+    if (bits == (size_t)-1 && PyErr_Occurred())
+        goto Done;
 
     /* Figure out how many 32-bit chunks this gives us. */
-    keyused = bits == 0 ? 1 : (size_t)((bits - 1) / 32 + 1);
+    keyused = bits == 0 ? 1 : (bits - 1) / 32 + 1;
 
     /* Convert seed to byte sequence. */
     key = (uint32_t *)PyMem_Malloc((size_t)4 * keyused);

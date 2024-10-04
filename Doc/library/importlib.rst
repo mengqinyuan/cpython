@@ -1166,9 +1166,10 @@ find and load modules.
 .. class:: ModuleSpec(name, loader, *, origin=None, loader_state=None, is_package=None)
 
    A specification for a module's import-system-related state.  This is
-   typically exposed as the module's :attr:`__spec__` attribute.  Many
-   of these attributes are also available directly on a module: for example,
-   ``module.__spec__.origin == module.__file__``.  Note, however, that
+   typically exposed as the module's :attr:`__spec__` attribute.  In the
+   descriptions below, the names in parentheses give the corresponding
+   attribute available directly on the module object,
+   e.g. ``module.__spec__.origin == module.__file__``.  Note, however, that
    while the *values* are usually equivalent, they can differ since there is
    no synchronization between the two objects.  For example, it is possible to update
    the module's :attr:`__file__` at runtime and this will not be automatically
@@ -1178,60 +1179,66 @@ find and load modules.
 
    .. attribute:: name
 
-      The module's fully qualified name
-      (see :attr:`__name__` attributes on modules).
-      The :term:`finder` should always set this attribute to a non-empty string.
+   (:attr:`__name__`)
+
+   The module's fully qualified name.
+   The :term:`finder` should always set this attribute to a non-empty string.
 
    .. attribute:: loader
 
-      The :term:`loader` used to load the module
-      (see :attr:`__loader__` attributes on modules).
-      The :term:`finder` should always set this attribute.
+   (:attr:`__loader__`)
+
+   The :term:`loader` used to load the module.
+   The :term:`finder` should always set this attribute.
 
    .. attribute:: origin
 
-      The location the :term:`loader` should use to load the module
-      (see :attr:`__file__` attributes on modules).
-      For example, for modules loaded from a .py file this is the filename.
-      The :term:`finder` should always set this attribute to a meaningful value
-      for the :term:`loader` to use.  In the uncommon case that there is not one
-      (like for namespace packages), it should be set to ``None``.
+   (:attr:`__file__`)
+
+   The location the :term:`loader` should use to load the module.
+   For example, for modules loaded from a .py file this is the filename.
+   The :term:`finder` should always set this attribute to a meaningful value
+   for the :term:`loader` to use.  In the uncommon case that there is not one
+   (like for namespace packages), it should be set to ``None``.
 
    .. attribute:: submodule_search_locations
 
-      The list of locations where the package's submodules will be found
-      (see :attr:`__path__` attributes on modules).
-      Most of the time this is a single directory.
-      The :term:`finder` should set this attribute to a list, even an empty one, to indicate
-      to the import system that the module is a package.  It should be set to ``None`` for
-      non-package modules.  It is set automatically later to a special object for
-      namespace packages.
+   (:attr:`__path__`)
+
+   The list of locations where the package's submodules will be found.
+   Most of the time this is a single directory.
+   The :term:`finder` should set this attribute to a list, even an empty one, to indicate
+   to the import system that the module is a package.  It should be set to ``None`` for
+   non-package modules.  It is set automatically later to a special object for
+   namespace packages.
 
    .. attribute:: loader_state
 
-      The :term:`finder` may set this attribute to an object containing additional,
-      module-specific data to use when loading the module.  Otherwise it should be
-      set to ``None``.
+   The :term:`finder` may set this attribute to an object containing additional,
+   module-specific data to use when loading the module.  Otherwise it should be
+   set to ``None``.
 
    .. attribute:: cached
 
-      The filename of a compiled version of the module's code
-      (see :attr:`__cached__` attributes on modules).
-      The :term:`finder` should always set this attribute but it may be ``None``
-      for modules that do not need compiled code stored.
+   (:attr:`__cached__`)
+
+   The filename of a compiled version of the module's code.
+   The :term:`finder` should always set this attribute but it may be ``None``
+   for modules that do not need compiled code stored.
 
    .. attribute:: parent
 
-      (Read-only) The fully qualified name of the package the module is in (or the
-      empty string for a top-level module).
-      See :attr:`__package__` attributes on modules.
-      If the module is a package then this is the same as :attr:`name`.
+   (:attr:`__package__`)
+
+   (Read-only) The fully qualified name of the package the module is in (or the
+   empty string for a top-level module).
+   If the module is a package then this is the same as :attr:`name`.
 
    .. attribute:: has_location
 
-      ``True`` if the spec's :attr:`origin` refers to a loadable location,
-      ``False`` otherwise.  This value impacts how :attr:`origin` is interpreted
-      and how the module's :attr:`__file__` is populated.
+   ``True`` if the spec's :attr:`origin` refers to a loadable location,
+    ``False`` otherwise.  This value impacts how :attr:`origin` is interpreted
+    and how the module's :attr:`__file__` is populated.
 
 
 .. class:: AppleFrameworkLoader(name, path)
@@ -1577,34 +1584,20 @@ Note that if ``name`` is a submodule (contains a dot),
 Importing a source file directly
 ''''''''''''''''''''''''''''''''
 
-This recipe should be used with caution: it is an approximation of an import
-statement where the file path is specified directly, rather than
-:data:`sys.path` being searched. Alternatives should first be considered first,
-such as modifying :data:`sys.path` when a proper module is required, or using
-:func:`runpy.run_path` when the global namespace resulting from running a Python
-file is appropriate.
+To import a Python source file directly, use the following recipe::
 
-To import a Python source file directly from a path, use the following recipe::
+  import importlib.util
+  import sys
 
-    import importlib.util
-    import sys
+  # For illustrative purposes.
+  import tokenize
+  file_path = tokenize.__file__
+  module_name = tokenize.__name__
 
-
-    def import_from_path(module_name, file_path):
-        spec = importlib.util.spec_from_file_location(module_name, file_path)
-        module = importlib.util.module_from_spec(spec)
-        sys.modules[module_name] = module
-        spec.loader.exec_module(module)
-        return module
-
-
-    # For illustrative purposes only (use of `json` is arbitrary).
-    import json
-    file_path = json.__file__
-    module_name = json.__name__
-
-    # Similar outcome as `import json`.
-    json = import_from_path(module_name, file_path)
+  spec = importlib.util.spec_from_file_location(module_name, file_path)
+  module = importlib.util.module_from_spec(spec)
+  sys.modules[module_name] = module
+  spec.loader.exec_module(module)
 
 
 Implementing lazy imports
@@ -1628,6 +1621,7 @@ The example below shows how to implement lazy imports::
     >>> #but it is not loaded in memory yet.
     >>> lazy_typing.TYPE_CHECKING
     False
+
 
 
 Setting up an importer

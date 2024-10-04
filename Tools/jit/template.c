@@ -84,8 +84,6 @@ do {                                                         \
 #undef WITHIN_STACK_BOUNDS
 #define WITHIN_STACK_BOUNDS() 1
 
-#define TIER_TWO 2
-
 _Py_CODEUNIT *
 _JIT_ENTRY(_PyInterpreterFrame *frame, _PyStackRef *stack_pointer, PyThreadState *tstate)
 {
@@ -109,9 +107,9 @@ _JIT_ENTRY(_PyInterpreterFrame *frame, _PyStackRef *stack_pointer, PyThreadState
     OPT_STAT_INC(uops_executed);
     UOP_STAT_INC(uopcode, execution_count);
 
+    // The actual instruction definitions (only one will be used):
     switch (uopcode) {
-        // The actual instruction definition gets inserted here:
-        CASE
+#include "executor_cases.c.h"
         default:
             Py_UNREACHABLE();
     }

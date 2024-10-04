@@ -31,8 +31,6 @@ if not support.MS_WINDOWS:
 else:
     # MSVC compiler flags
     CFLAGS = [
-        # Display warnings level 1 to 4
-        '/W4',
         # Treat all compiler warnings as compiler errors
         '/WX',
     ]

@@ -3387,9 +3387,8 @@ _PyErr_NoMemory(PyThreadState *tstate)
 }
 
 static void
-MemoryError_dealloc(PyObject *obj)
+MemoryError_dealloc(PyBaseExceptionObject *self)
 {
-    PyBaseExceptionObject *self = (PyBaseExceptionObject *)obj;
     _PyObject_GC_UNTRACK(self);
 
     BaseException_clear(self);
@@ -3448,7 +3447,7 @@ PyTypeObject _PyExc_MemoryError = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "MemoryError",
     sizeof(PyBaseExceptionObject),
-    0, MemoryError_dealloc, 0, 0, 0, 0, 0, 0, 0,
+    0, (destructor)MemoryError_dealloc, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0,
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
     PyDoc_STR("Out of memory."), (traverseproc)BaseException_traverse,

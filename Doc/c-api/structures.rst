@@ -485,8 +485,7 @@ Accessing attributes of extension types
    ``PyMemberDef`` may contain a definition for the special member
    ``"__vectorcalloffset__"``, corresponding to
    :c:member:`~PyTypeObject.tp_vectorcall_offset` in type objects.
-   This member must be defined with ``Py_T_PYSSIZET``, and either
-   ``Py_READONLY`` or ``Py_READONLY | Py_RELATIVE_OFFSET``. For example::
+   These must be defined with ``Py_T_PYSSIZET`` and ``Py_READONLY``, for example::
 
       static PyMemberDef spam_type_members[] = {
           {"__vectorcalloffset__", Py_T_PYSSIZET,
@@ -506,12 +505,6 @@ Accessing attributes of extension types
 
       ``PyMemberDef`` is always available.
       Previously, it required including ``"structmember.h"``.
-
-   .. versionchanged:: 3.14
-
-      :c:macro:`Py_RELATIVE_OFFSET` is now allowed for
-      ``"__vectorcalloffset__"``, ``"__dictoffset__"`` and
-      ``"__weaklistoffset__"``.
 
 .. c:function:: PyObject* PyMember_GetOne(const char *obj_addr, struct PyMemberDef *m)
 

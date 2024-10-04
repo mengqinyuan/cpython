@@ -74,8 +74,4 @@ def get_version_info():
 
 
 if __name__ == "__main__":
-    short_ver, full_ver = format_version_info(get_header_version_info())
-    if sys.argv[1:2] == ["--short"]:
-        print(short_ver)
-    else:
-        print(full_ver)
+    print(format_version_info(get_header_version_info())[1])

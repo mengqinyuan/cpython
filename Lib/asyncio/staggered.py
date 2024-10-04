@@ -133,7 +133,6 @@ async def staggered_race(coro_fns, delay, *, loop=None):
                         raise d.exception()
         return winner_result, winner_index, exceptions
     finally:
-        del exceptions
         # Make sure no tasks are left running if we leave this function
         for t in running_tasks:
             t.cancel()

@@ -104,11 +104,9 @@ clear_weakref_lock_held(PyWeakReference *self, PyObject **callback)
 
 // Clear the weakref and its callback
 static void
-clear_weakref(PyObject *op)
+clear_weakref(PyWeakReference *self)
 {
-    PyWeakReference *self = _PyWeakref_CAST(op);
     PyObject *callback = NULL;
-
     // self->wr_object may be Py_None if the GC cleared the weakref, so lock
     // using the pointer in the weakref.
     LOCK_WEAKREFS_FOR_WR(self);
@@ -141,24 +139,22 @@ static void
 weakref_dealloc(PyObject *self)
 {
     PyObject_GC_UnTrack(self);
-    clear_weakref(self);
+    clear_weakref((PyWeakReference *) self);
     Py_TYPE(self)->tp_free(self);
 }
 
 
 static int
-gc_traverse(PyObject *op, visitproc visit, void *arg)
+gc_traverse(PyWeakReference *self, visitproc visit, void *arg)
 {
-    PyWeakReference *self = _PyWeakref_CAST(op);
     Py_VISIT(self->wr_callback);
     return 0;
 }
 
 
 static int
-gc_clear(PyObject *op)
+gc_clear(PyWeakReference *self)
 {
-    PyWeakReference *self = _PyWeakref_CAST(op);
     PyObject *callback;
     // The world is stopped during GC in free-threaded builds. It's safe to
     // call this without holding the lock.
@@ -202,9 +198,8 @@ weakref_hash_lock_held(PyWeakReference *self)
 }
 
 static Py_hash_t
-weakref_hash(PyObject *op)
+weakref_hash(PyWeakReference *self)
 {
-    PyWeakReference *self = _PyWeakref_CAST(op);
     Py_hash_t hash;
     Py_BEGIN_CRITICAL_SECTION(self);
     hash = weakref_hash_lock_held(self);
@@ -504,11 +499,11 @@ _PyWeakref_RefType = {
     .tp_vectorcall_offset = offsetof(PyWeakReference, vectorcall),
     .tp_call = PyVectorcall_Call,
     .tp_repr = weakref_repr,
-    .tp_hash = weakref_hash,
+    .tp_hash = (hashfunc)weakref_hash,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC |
                 Py_TPFLAGS_HAVE_VECTORCALL | Py_TPFLAGS_BASETYPE,
-    .tp_traverse = gc_traverse,
-    .tp_clear = gc_clear,
+    .tp_traverse = (traverseproc)gc_traverse,
+    .tp_clear = (inquiry)gc_clear,
     .tp_richcompare = weakref_richcompare,
     .tp_methods = weakref_methods,
     .tp_members = weakref_members,
@@ -692,7 +687,7 @@ proxy_bool(PyObject *proxy)
 }
 
 static void
-proxy_dealloc(PyObject *self)
+proxy_dealloc(PyWeakReference *self)
 {
     PyObject_GC_UnTrack(self);
     clear_weakref(self);
@@ -855,7 +850,7 @@ _PyWeakref_ProxyType = {
     sizeof(PyWeakReference),
     0,
     /* methods */
-    proxy_dealloc,                      /* tp_dealloc */
+    (destructor)proxy_dealloc,          /* tp_dealloc */
     0,                                  /* tp_vectorcall_offset */
     0,                                  /* tp_getattr */
     0,                                  /* tp_setattr */
@@ -873,8 +868,8 @@ _PyWeakref_ProxyType = {
     0,                                  /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, /* tp_flags */
     0,                                  /* tp_doc */
-    gc_traverse,                        /* tp_traverse */
-    gc_clear,                           /* tp_clear */
+    (traverseproc)gc_traverse,          /* tp_traverse */
+    (inquiry)gc_clear,                  /* tp_clear */
     proxy_richcompare,                  /* tp_richcompare */
     0,                                  /* tp_weaklistoffset */
     proxy_iter,                         /* tp_iter */
@@ -890,7 +885,7 @@ _PyWeakref_CallableProxyType = {
     sizeof(PyWeakReference),
     0,
     /* methods */
-    proxy_dealloc,                      /* tp_dealloc */
+    (destructor)proxy_dealloc,          /* tp_dealloc */
     0,                                  /* tp_vectorcall_offset */
     0,                                  /* tp_getattr */
     0,                                  /* tp_setattr */
@@ -907,8 +902,8 @@ _PyWeakref_CallableProxyType = {
     0,                                  /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, /* tp_flags */
     0,                                  /* tp_doc */
-    gc_traverse,                        /* tp_traverse */
-    gc_clear,                           /* tp_clear */
+    (traverseproc)gc_traverse,          /* tp_traverse */
+    (inquiry)gc_clear,                  /* tp_clear */
     proxy_richcompare,                  /* tp_richcompare */
     0,                                  /* tp_weaklistoffset */
     proxy_iter,                         /* tp_iter */

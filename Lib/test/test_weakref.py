@@ -123,12 +123,10 @@ class ReferencesTestCase(TestBase):
     def test_ref_repr(self):
         obj = C()
         ref = weakref.ref(obj)
-        regex = (
-            rf"<weakref at 0x[0-9a-fA-F]+; "
-            rf"to '{'' if __name__ == '__main__' else C.__module__ + '.'}{C.__qualname__}' "
-            rf"at 0x[0-9a-fA-F]+>"
-        )
-        self.assertRegex(repr(ref), regex)
+        self.assertRegex(repr(ref),
+                         rf"<weakref at 0x[0-9a-fA-F]+; "
+                         rf"to '{C.__module__}.{C.__qualname__}' "
+                         rf"at 0x[0-9a-fA-F]+>")
 
         obj = None
         gc_collect()
@@ -143,13 +141,10 @@ class ReferencesTestCase(TestBase):
 
         obj2 = WithName()
         ref2 = weakref.ref(obj2)
-        regex = (
-            rf"<weakref at 0x[0-9a-fA-F]+; "
-            rf"to '{'' if __name__ == '__main__' else WithName.__module__ + '.'}"
-            rf"{WithName.__qualname__}' "
-            rf"at 0x[0-9a-fA-F]+ +\(custom_name\)>"
-        )
-        self.assertRegex(repr(ref2), regex)
+        self.assertRegex(repr(ref2),
+                         rf"<weakref at 0x[0-9a-fA-F]+; "
+                         rf"to '{WithName.__module__}.{WithName.__qualname__}' "
+                         rf"at 0x[0-9a-fA-F]+ \(custom_name\)>")
 
     def test_repr_failure_gh99184(self):
         class MyConfig(dict):
@@ -234,12 +229,10 @@ class ReferencesTestCase(TestBase):
     def test_proxy_repr(self):
         obj = C()
         ref = weakref.proxy(obj, self.callback)
-        regex = (
-            rf"<weakproxy at 0x[0-9a-fA-F]+; "
-            rf"to '{'' if __name__ == '__main__' else C.__module__ + '.'}{C.__qualname__}' "
-            rf"at 0x[0-9a-fA-F]+>"
-        )
-        self.assertRegex(repr(ref), regex)
+        self.assertRegex(repr(ref),
+                         rf"<weakproxy at 0x[0-9a-fA-F]+; "
+                         rf"to '{C.__module__}.{C.__qualname__}' "
+                         rf"at 0x[0-9a-fA-F]+>")
 
         obj = None
         gc_collect()

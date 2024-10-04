@@ -36,7 +36,8 @@ from .trace import trace
 
 # types
 Command = commands.Command
-from .types import Callback, SimpleContextManager, KeySpec, CommandName
+if False:
+    from .types import Callback, SimpleContextManager, KeySpec, CommandName
 
 
 def disp_str(buffer: str) -> tuple[str, list[int]]:
@@ -150,7 +151,6 @@ default_keymap: tuple[tuple[KeySpec, CommandName], ...] = tuple(
         (r"\<right>", "right"),
         (r"\C-\<right>", "forward-word"),
         (r"\<delete>", "delete"),
-        (r"\x1b[3~", "delete"),
         (r"\<backspace>", "backspace"),
         (r"\M-\<backspace>", "backward-kill-word"),
         (r"\<end>", "end-of-line"),  # was 'end'
@@ -247,7 +247,6 @@ class Reader:
     lxy: tuple[int, int] = field(init=False)
     scheduled_commands: list[str] = field(default_factory=list)
     can_colorize: bool = False
-    threading_hook: Callback | None = None
 
     ## cached metadata to speed up screen refreshes
     @dataclass
@@ -346,10 +345,7 @@ class Reader:
         pos = self.pos
         pos -= offset
 
-        prompt_from_cache = (offset and self.buffer[offset - 1] != "\n")
-
         lines = "".join(self.buffer[offset:]).split("\n")
-
         cursor_found = False
         lines_beyond_cursor = 0
         for ln, line in enumerate(lines, num_common_lines):
@@ -363,12 +359,7 @@ class Reader:
                     # No need to keep formatting lines.
                     # The console can't show them.
                     break
-            if prompt_from_cache:
-                # Only the first line's prompt can come from the cache
-                prompt_from_cache = False
-                prompt = ""
-            else:
-                prompt = self.get_prompt(ln, ll >= pos >= 0)
+            prompt = self.get_prompt(ln, ll >= pos >= 0)
             while "\n" in prompt:
                 pre_prompt, _, prompt = prompt.partition("\n")
                 last_refresh_line_end_offsets.append(offset)
@@ -723,24 +714,6 @@ class Reader:
             self.console.finish()
             self.finish()
 
-    def run_hooks(self) -> None:
-        threading_hook = self.threading_hook
-        if threading_hook is None and 'threading' in sys.modules:
-            from ._threading_handler import install_threading_hook
-            install_threading_hook(self)
-        if threading_hook is not None:
-            try:
-                threading_hook()
-            except Exception:
-                pass
-
-        input_hook = self.console.input_hook
-        if input_hook:
-            try:
-                input_hook()
-            except Exception:
-                pass
-
     def handle1(self, block: bool = True) -> bool:
         """Handle a single event.  Wait as long as it takes if block
         is true (the default), otherwise return False if no event is
@@ -751,13 +724,16 @@ class Reader:
             self.dirty = True
 
         while True:
-            # We use the same timeout as in readline.c: 100ms
-            self.run_hooks()
-            self.console.wait(100)
-            event = self.console.get_event(block=False)
-            if not event:
-                if block:
-                    continue
+            input_hook = self.console.input_hook
+            if input_hook:
+                input_hook()
+                # We use the same timeout as in readline.c: 100ms
+                while not self.console.wait(100):
+                    input_hook()
+                event = self.console.get_event(block=False)
+            else:
+                event = self.console.get_event(block)
+            if not event:  # can only happen if we're not blocking
                 return False
 
             translate = True
@@ -779,7 +755,8 @@ class Reader:
             if cmd is None:
                 if block:
                     continue
-                return False
+                else:
+                    return False
 
             self.do_cmd(cmd)
             return True

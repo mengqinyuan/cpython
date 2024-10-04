@@ -286,7 +286,7 @@ static void _dump_symtable(PySTEntryObject* ste, PyObject* prefix)
         (
             "%U=== Symtable for %U ===\n"
             "%U%s%s\n"
-            "%U%s%s%s%s%s%s%s%s%s%s%s\n"
+            "%U%s%s%s%s%s%s%s%s%s%s%s%s%s\n"
             "%Ulineno: %d col_offset: %d\n"
             "%U--- Symbols ---\n"
         ),
@@ -551,7 +551,7 @@ _PyST_GetScope(PySTEntryObject *ste, PyObject *name)
     if (symbol < 0) {
         return -1;
     }
-    return SYMBOL_TO_SCOPE(symbol);
+    return (symbol >> SCOPE_OFFSET) & SCOPE_MASK;
 }
 
 int
@@ -809,7 +809,7 @@ inline_comprehension(PySTEntryObject *ste, PySTEntryObject *comp,
             assert(_PyUnicode_EqualToASCIIString(k, ".0"));
             continue;
         }
-        int scope = SYMBOL_TO_SCOPE(comp_flags);
+        int scope = (comp_flags >> SCOPE_OFFSET) & SCOPE_MASK;
         int only_flags = comp_flags & ((1 << SCOPE_OFFSET) - 1);
         if (scope == CELL || only_flags & DEF_COMP_CELL) {
             if (PySet_Add(inlined_cells, k) < 0) {

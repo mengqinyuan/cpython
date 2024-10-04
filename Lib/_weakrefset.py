@@ -36,26 +36,41 @@ class _IterationGuard:
 class WeakSet:
     def __init__(self, data=None):
         self.data = set()
-
         def _remove(item, selfref=ref(self)):
             self = selfref()
             if self is not None:
-                self.data.discard(item)
-
+                if self._iterating:
+                    self._pending_removals.append(item)
+                else:
+                    self.data.discard(item)
         self._remove = _remove
+        # A list of keys to be removed
+        self._pending_removals = []
+        self._iterating = set()
         if data is not None:
             self.update(data)
 
+    def _commit_removals(self):
+        pop = self._pending_removals.pop
+        discard = self.data.discard
+        while True:
+            try:
+                item = pop()
+            except IndexError:
+                return
+            discard(item)
+
     def __iter__(self):
-        for itemref in self.data.copy():
-            item = itemref()
-            if item is not None:
-                # Caveat: the iterator will keep a strong reference to
-                # `item` until it is resumed or closed.
-                yield item
+        with _IterationGuard(self):
+            for itemref in self.data:
+                item = itemref()
+                if item is not None:
+                    # Caveat: the iterator will keep a strong reference to
+                    # `item` until it is resumed or closed.
+                    yield item
 
     def __len__(self):
-        return len(self.data)
+        return len(self.data) - len(self._pending_removals)
 
     def __contains__(self, item):
         try:
@@ -68,15 +83,21 @@ class WeakSet:
         return self.__class__, (list(self),), self.__getstate__()
 
     def add(self, item):
+        if self._pending_removals:
+            self._commit_removals()
         self.data.add(ref(item, self._remove))
 
     def clear(self):
+        if self._pending_removals:
+            self._commit_removals()
         self.data.clear()
 
     def copy(self):
         return self.__class__(self)
 
     def pop(self):
+        if self._pending_removals:
+            self._commit_removals()
         while True:
             try:
                 itemref = self.data.pop()
@@ -87,12 +108,18 @@ class WeakSet:
                 return item
 
     def remove(self, item):
+        if self._pending_removals:
+            self._commit_removals()
         self.data.remove(ref(item))
 
     def discard(self, item):
+        if self._pending_removals:
+            self._commit_removals()
         self.data.discard(ref(item))
 
     def update(self, other):
+        if self._pending_removals:
+            self._commit_removals()
         for element in other:
             self.add(element)
 
@@ -109,6 +136,8 @@ class WeakSet:
     def difference_update(self, other):
         self.__isub__(other)
     def __isub__(self, other):
+        if self._pending_removals:
+            self._commit_removals()
         if self is other:
             self.data.clear()
         else:
@@ -122,6 +151,8 @@ class WeakSet:
     def intersection_update(self, other):
         self.__iand__(other)
     def __iand__(self, other):
+        if self._pending_removals:
+            self._commit_removals()
         self.data.intersection_update(ref(item) for item in other)
         return self
 
@@ -153,6 +184,8 @@ class WeakSet:
     def symmetric_difference_update(self, other):
         self.__ixor__(other)
     def __ixor__(self, other):
+        if self._pending_removals:
+            self._commit_removals()
         if self is other:
             self.data.clear()
         else:

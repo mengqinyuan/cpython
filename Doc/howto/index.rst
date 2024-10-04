@@ -32,7 +32,6 @@ Python Library Reference.
    isolating-extensions.rst
    timerfd.rst
    mro.rst
-   free-threading-python.rst
    free-threading-extensions.rst
 
 General:
@@ -53,7 +52,6 @@ General:
 Advanced development:
 
 * :ref:`curses-howto`
-* :ref:`freethreading-python-howto`
 * :ref:`freethreading-extensions-howto`
 * :ref:`isolating-extensions-howto`
 * :ref:`python_2.3_mro`

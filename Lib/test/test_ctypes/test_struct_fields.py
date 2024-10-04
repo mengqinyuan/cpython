@@ -4,9 +4,7 @@ from ._support import (CField, Py_TPFLAGS_DISALLOW_INSTANTIATION,
                        Py_TPFLAGS_IMMUTABLETYPE)
 
 
-NOTHING = object()
-
-class FieldsTestBase:
+class StructFieldsTestCase(unittest.TestCase):
     # Structure/Union classes must get 'finalized' sooner or
     # later, when one of these things happen:
     #
@@ -16,47 +14,42 @@ class FieldsTestBase:
     # 4. The type is subclassed
     #
     # When they are finalized, assigning _fields_ is no longer allowed.
-
-    def assert_final_fields(self, cls, expected=NOTHING):
-        self.assertRaises(AttributeError, setattr, cls, "_fields_", [])
-        self.assertEqual(getattr(cls, "_fields_", NOTHING), expected)
-
     def test_1_A(self):
-        class X(self.cls):
+        class X(Structure):
             pass
         self.assertEqual(sizeof(X), 0) # not finalized
         X._fields_ = [] # finalized
-        self.assert_final_fields(X, expected=[])
+        self.assertRaises(AttributeError, setattr, X, "_fields_", [])
 
     def test_1_B(self):
-        class X(self.cls):
+        class X(Structure):
             _fields_ = [] # finalized
-        self.assert_final_fields(X, expected=[])
+        self.assertRaises(AttributeError, setattr, X, "_fields_", [])
 
     def test_2(self):
-        class X(self.cls):
+        class X(Structure):
             pass
         X()
-        self.assert_final_fields(X)
+        self.assertRaises(AttributeError, setattr, X, "_fields_", [])
 
     def test_3(self):
-        class X(self.cls):
+        class X(Structure):
             pass
-        class Y(self.cls):
+        class Y(Structure):
             _fields_ = [("x", X)] # finalizes X
-        self.assert_final_fields(X)
+        self.assertRaises(AttributeError, setattr, X, "_fields_", [])
 
     def test_4(self):
-        class X(self.cls):
+        class X(Structure):
             pass
         class Y(X):
             pass
-        self.assert_final_fields(X)
+        self.assertRaises(AttributeError, setattr, X, "_fields_", [])
         Y._fields_ = []
-        self.assert_final_fields(X)
+        self.assertRaises(AttributeError, setattr, X, "_fields_", [])
 
     def test_5(self):
-        class X(self.cls):
+        class X(Structure):
             _fields_ = (("char", c_char * 5),)
 
         x = X(b'#' * 5)
@@ -66,8 +59,15 @@ class FieldsTestBase:
     def test_6(self):
         self.assertRaises(TypeError, CField)
 
+    def test_cfield_type_flags(self):
+        self.assertTrue(CField.__flags__ & Py_TPFLAGS_DISALLOW_INSTANTIATION)
+        self.assertTrue(CField.__flags__ & Py_TPFLAGS_IMMUTABLETYPE)
+
+    def test_cfield_inheritance_hierarchy(self):
+        self.assertEqual(CField.mro(), [CField, object])
+
     def test_gh99275(self):
-        class BrokenStructure(self.cls):
+        class BrokenStructure(Structure):
             def __init_subclass__(cls, **kwargs):
                 cls._fields_ = []  # This line will fail, `stginfo` is not ready
 
@@ -78,28 +78,26 @@ class FieldsTestBase:
     # __set__ and __get__ should raise a TypeError in case their self
     # argument is not a ctype instance.
     def test___set__(self):
-        class MyCStruct(self.cls):
+        class MyCStruct(Structure):
             _fields_ = (("field", c_int),)
         self.assertRaises(TypeError,
                           MyCStruct.field.__set__, 'wrong type self', 42)
 
+        class MyCUnion(Union):
+            _fields_ = (("field", c_int),)
+        self.assertRaises(TypeError,
+                          MyCUnion.field.__set__, 'wrong type self', 42)
+
     def test___get__(self):
-        class MyCStruct(self.cls):
+        class MyCStruct(Structure):
             _fields_ = (("field", c_int),)
         self.assertRaises(TypeError,
                           MyCStruct.field.__get__, 'wrong type self', 42)
 
-class StructFieldsTestCase(unittest.TestCase, FieldsTestBase):
-    cls = Structure
-
-    def test_cfield_type_flags(self):
-        self.assertTrue(CField.__flags__ & Py_TPFLAGS_IMMUTABLETYPE)
-
-    def test_cfield_inheritance_hierarchy(self):
-        self.assertEqual(CField.mro(), [CField, object])
-
-class UnionFieldsTestCase(unittest.TestCase, FieldsTestBase):
-    cls = Union
+        class MyCUnion(Union):
+            _fields_ = (("field", c_int),)
+        self.assertRaises(TypeError,
+                          MyCUnion.field.__get__, 'wrong type self', 42)
 
 
 if __name__ == "__main__":

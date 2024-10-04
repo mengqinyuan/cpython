@@ -15,10 +15,6 @@
 #include "osdefs.h"               // MAXPATHLEN
 
 
-#define _PyModule_CAST(op) \
-    (assert(PyModule_Check(op)), _Py_CAST(PyModuleObject*, (op)))
-
-
 static PyMemberDef module_members[] = {
     {"__dict__", _Py_T_OBJECT, offsetof(PyModuleObject, md_dict), Py_READONLY},
     {0}
@@ -229,9 +225,7 @@ _PyModule_CreateInitialized(PyModuleDef* module, int module_api_version)
         return NULL;
     }
     name = _PyImport_ResolveNameWithPackageContext(name);
-
-    m = (PyModuleObject*)PyModule_New(name);
-    if (m == NULL)
+    if ((m = (PyModuleObject*)PyModule_New(name)) == NULL)
         return NULL;
 
     if (module->m_size > 0) {
@@ -764,26 +758,22 @@ module___init___impl(PyModuleObject *self, PyObject *name, PyObject *doc)
 }
 
 static void
-module_dealloc(PyObject *self)
+module_dealloc(PyModuleObject *m)
 {
-    PyModuleObject *m = _PyModule_CAST(self);
+    int verbose = _Py_GetConfig()->verbose;
 
     PyObject_GC_UnTrack(m);
-
-    int verbose = _Py_GetConfig()->verbose;
     if (verbose && m->md_name) {
         PySys_FormatStderr("# destroy %U\n", m->md_name);
     }
     if (m->md_weaklist != NULL)
         PyObject_ClearWeakRefs((PyObject *) m);
-
     /* bpo-39824: Don't call m_free() if m_size > 0 and md_state=NULL */
     if (m->md_def && m->md_def->m_free
         && (m->md_def->m_size <= 0 || m->md_state != NULL))
     {
         m->md_def->m_free(m);
     }
-
     Py_XDECREF(m->md_dict);
     Py_XDECREF(m->md_name);
     if (m->md_state != NULL)
@@ -792,9 +782,8 @@ module_dealloc(PyObject *self)
 }
 
 static PyObject *
-module_repr(PyObject *self)
+module_repr(PyModuleObject *m)
 {
-    PyModuleObject *m = _PyModule_CAST(self);
     PyInterpreterState *interp = _PyInterpreterState_GET();
     return _PyImport_ImportlibModuleRepr(interp, (PyObject *)m);
 }
@@ -1073,17 +1062,14 @@ done:
 
 
 PyObject*
-_Py_module_getattro(PyObject *self, PyObject *name)
+_Py_module_getattro(PyModuleObject *m, PyObject *name)
 {
-    PyModuleObject *m = _PyModule_CAST(self);
     return _Py_module_getattro_impl(m, name, 0);
 }
 
 static int
-module_traverse(PyObject *self, visitproc visit, void *arg)
+module_traverse(PyModuleObject *m, visitproc visit, void *arg)
 {
-    PyModuleObject *m = _PyModule_CAST(self);
-
     /* bpo-39824: Don't call m_traverse() if m_size > 0 and md_state=NULL */
     if (m->md_def && m->md_def->m_traverse
         && (m->md_def->m_size <= 0 || m->md_state != NULL))
@@ -1092,16 +1078,13 @@ module_traverse(PyObject *self, visitproc visit, void *arg)
         if (res)
             return res;
     }
-
     Py_VISIT(m->md_dict);
     return 0;
 }
 
 static int
-module_clear(PyObject *self)
+module_clear(PyModuleObject *m)
 {
-    PyModuleObject *m = _PyModule_CAST(self);
-
     /* bpo-39824: Don't call m_clear() if m_size > 0 and md_state=NULL */
     if (m->md_def && m->md_def->m_clear
         && (m->md_def->m_size <= 0 || m->md_state != NULL))
@@ -1166,10 +1149,8 @@ module_get_dict(PyModuleObject *m)
 }
 
 static PyObject *
-module_get_annotate(PyObject *self, void *Py_UNUSED(ignored))
+module_get_annotate(PyModuleObject *m, void *Py_UNUSED(ignored))
 {
-    PyModuleObject *m = _PyModule_CAST(self);
-
     PyObject *dict = module_get_dict(m);
     if (dict == NULL) {
         return NULL;
@@ -1187,14 +1168,12 @@ module_get_annotate(PyObject *self, void *Py_UNUSED(ignored))
 }
 
 static int
-module_set_annotate(PyObject *self, PyObject *value, void *Py_UNUSED(ignored))
+module_set_annotate(PyModuleObject *m, PyObject *value, void *Py_UNUSED(ignored))
 {
-    PyModuleObject *m = _PyModule_CAST(self);
     if (value == NULL) {
         PyErr_SetString(PyExc_TypeError, "cannot delete __annotate__ attribute");
         return -1;
     }
-
     PyObject *dict = module_get_dict(m);
     if (dict == NULL) {
         return -1;
@@ -1221,10 +1200,8 @@ module_set_annotate(PyObject *self, PyObject *value, void *Py_UNUSED(ignored))
 }
 
 static PyObject *
-module_get_annotations(PyObject *self, void *Py_UNUSED(ignored))
+module_get_annotations(PyModuleObject *m, void *Py_UNUSED(ignored))
 {
-    PyModuleObject *m = _PyModule_CAST(self);
-
     PyObject *dict = module_get_dict(m);
     if (dict == NULL) {
         return NULL;
@@ -1272,16 +1249,14 @@ module_get_annotations(PyObject *self, void *Py_UNUSED(ignored))
 }
 
 static int
-module_set_annotations(PyObject *self, PyObject *value, void *Py_UNUSED(ignored))
+module_set_annotations(PyModuleObject *m, PyObject *value, void *Py_UNUSED(ignored))
 {
-    PyModuleObject *m = _PyModule_CAST(self);
-
+    int ret = -1;
     PyObject *dict = module_get_dict(m);
     if (dict == NULL) {
         return -1;
     }
 
-    int ret = -1;
     if (value != NULL) {
         /* set */
         ret = PyDict_SetItem(dict, &_Py_ID(__annotations__), value);
@@ -1307,8 +1282,8 @@ module_set_annotations(PyObject *self, PyObject *value, void *Py_UNUSED(ignored)
 
 
 static PyGetSetDef module_getsets[] = {
-    {"__annotations__", module_get_annotations, module_set_annotations},
-    {"__annotate__", module_get_annotate, module_set_annotate},
+    {"__annotations__", (getter)module_get_annotations, (setter)module_set_annotations},
+    {"__annotate__", (getter)module_get_annotate, (setter)module_set_annotate},
     {NULL}
 };
 
@@ -1317,26 +1292,26 @@ PyTypeObject PyModule_Type = {
     "module",                                   /* tp_name */
     sizeof(PyModuleObject),                     /* tp_basicsize */
     0,                                          /* tp_itemsize */
-    module_dealloc,                             /* tp_dealloc */
+    (destructor)module_dealloc,                 /* tp_dealloc */
     0,                                          /* tp_vectorcall_offset */
     0,                                          /* tp_getattr */
     0,                                          /* tp_setattr */
     0,                                          /* tp_as_async */
-    module_repr,                                /* tp_repr */
+    (reprfunc)module_repr,                      /* tp_repr */
     0,                                          /* tp_as_number */
     0,                                          /* tp_as_sequence */
     0,                                          /* tp_as_mapping */
     0,                                          /* tp_hash */
     0,                                          /* tp_call */
     0,                                          /* tp_str */
-    _Py_module_getattro,                        /* tp_getattro */
+    (getattrofunc)_Py_module_getattro,          /* tp_getattro */
     PyObject_GenericSetAttr,                    /* tp_setattro */
     0,                                          /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC |
         Py_TPFLAGS_BASETYPE,                    /* tp_flags */
     module___init____doc__,                     /* tp_doc */
-    module_traverse,                            /* tp_traverse */
-    module_clear,                               /* tp_clear */
+    (traverseproc)module_traverse,              /* tp_traverse */
+    (inquiry)module_clear,                      /* tp_clear */
     0,                                          /* tp_richcompare */
     offsetof(PyModuleObject, md_weaklist),      /* tp_weaklistoffset */
     0,                                          /* tp_iter */

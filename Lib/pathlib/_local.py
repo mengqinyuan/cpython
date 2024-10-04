@@ -3,6 +3,7 @@ import ntpath
 import operator
 import os
 import posixpath
+import shutil
 import sys
 from glob import _StringGlobber
 from itertools import chain
@@ -17,9 +18,9 @@ try:
 except ImportError:
     grp = None
 
-from pathlib._os import (copyfile, file_metadata_keys, read_file_metadata,
-                         write_file_metadata)
-from pathlib._abc import UnsupportedOperation, PurePathBase, PathBase
+from ._os import (UnsupportedOperation, copyfile, file_metadata_keys,
+                  read_file_metadata, write_file_metadata)
+from ._abc import PurePathBase, PathBase
 
 
 __all__ = [
@@ -272,7 +273,8 @@ class PurePath(PurePathBase):
             elif len(drv_parts) == 6:
                 # e.g. //?/unc/server/share
                 root = sep
-        return drv, root, [x for x in rel.split(sep) if x and x != '.']
+        parsed = [sys.intern(str(x)) for x in rel.split(sep) if x and x != '.']
+        return drv, root, parsed
 
     @property
     def _raw_path(self):
@@ -786,18 +788,25 @@ class Path(PathBase, PurePath):
     _write_metadata = write_file_metadata
 
     if copyfile:
-        def _copy_file(self, target):
+        def copy(self, target, *, follow_symlinks=True, preserve_metadata=False):
             """
-            Copy the contents of this file to the given target.
+            Copy the contents of this file to the given target. If this file is a
+            symlink and follow_symlinks is false, a symlink will be created at the
+            target.
             """
             try:
                 target = os.fspath(target)
             except TypeError:
                 if not isinstance(target, PathBase):
                     raise
-                PathBase._copy_file(self, target)
             else:
-                copyfile(os.fspath(self), target)
+                try:
+                    copyfile(os.fspath(self), target, follow_symlinks)
+                    return
+                except UnsupportedOperation:
+                    pass  # Fall through to generic code.
+            PathBase.copy(self, target, follow_symlinks=follow_symlinks,
+                          preserve_metadata=preserve_metadata)
 
     def chmod(self, mode, *, follow_symlinks=True):
         """
@@ -822,10 +831,34 @@ class Path(PathBase, PurePath):
         """
         os.rmdir(self)
 
-    def _rmtree(self):
-        # Lazy import to improve module import time
-        import shutil
-        shutil.rmtree(self)
+    def delete(self, ignore_errors=False, on_error=None):
+        """
+        Delete this file or directory (including all sub-directories).
+
+        If *ignore_errors* is true, exceptions raised from scanning the
+        filesystem and removing files and directories are ignored. Otherwise,
+        if *on_error* is set, it will be called to handle the error. If
+        neither *ignore_errors* nor *on_error* are set, exceptions are
+        propagated to the caller.
+        """
+        if self.is_dir(follow_symlinks=False):
+            onexc = None
+            if on_error:
+                def onexc(func, filename, err):
+                    err.filename = filename
+                    on_error(err)
+            shutil.rmtree(str(self), ignore_errors, onexc=onexc)
+        else:
+            try:
+                self.unlink()
+            except OSError as err:
+                if not ignore_errors:
+                    if on_error:
+                        on_error(err)
+                    else:
+                        raise
+
+    delete.avoids_symlink_attacks = shutil.rmtree.avoids_symlink_attacks
 
     def rename(self, target):
         """
@@ -860,14 +893,6 @@ class Path(PathBase, PurePath):
             Note the order of arguments (link, target) is the reverse of os.symlink.
             """
             os.symlink(target, self, target_is_directory)
-
-    if os.name == 'nt':
-        def _symlink_to_target_of(self, link):
-            """
-            Make this path a symlink with the same target as the given link.
-            This is used by copy().
-            """
-            self.symlink_to(link.readlink(), link.is_dir())
 
     if hasattr(os, "link"):
         def hardlink_to(self, target):

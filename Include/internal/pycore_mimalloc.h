@@ -36,18 +36,9 @@ typedef enum {
 #  define MI_TSAN 1
 #endif
 
-#ifdef __cplusplus
-extern "C++" {
-#endif
-
 #include "mimalloc/mimalloc.h"
 #include "mimalloc/mimalloc/types.h"
 #include "mimalloc/mimalloc/internal.h"
-
-#ifdef __cplusplus
-}
-#endif
-
 #endif
 
 #ifdef Py_GIL_DISABLED

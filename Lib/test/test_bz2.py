@@ -476,6 +476,7 @@ class BZ2FileTest(BaseTest):
         self.assertEqual(xlines, [b'Test'])
 
     def testContextProtocol(self):
+        f = None
         with BZ2File(self.filename, "wb") as f:
             f.write(b"xxx")
         f = BZ2File(self.filename, "rb")

@@ -44,7 +44,6 @@ class _Target(typing.Generic[_S, _R]):
     stable: bool = False
     debug: bool = False
     verbose: bool = False
-    known_symbols: dict[str, int] = dataclasses.field(default_factory=dict)
 
     def _compute_digest(self, out: pathlib.Path) -> str:
         hasher = hashlib.sha256()
@@ -96,9 +95,7 @@ class _Target(typing.Generic[_S, _R]):
         if group.data.body:
             line = f"0: {str(bytes(group.data.body)).removeprefix('b')}"
             group.data.disassembly.append(line)
-        group.process_relocations(
-            known_symbols=self.known_symbols, alignment=self.alignment
-        )
+        group.process_relocations(alignment=self.alignment)
         return group
 
     def _handle_section(self, section: _S, group: _stencils.StencilGroup) -> None:
@@ -185,27 +182,15 @@ class _Target(typing.Generic[_S, _R]):
 
     async def _build_stencils(self) -> dict[str, _stencils.StencilGroup]:
         generated_cases = PYTHON_EXECUTOR_CASES_C_H.read_text()
-        cases_and_opnames = sorted(
-            re.findall(
-                r"\n {8}(case (\w+): \{\n.*?\n {8}\})", generated_cases, flags=re.DOTALL
-            )
-        )
+        opnames = sorted(re.findall(r"\n {8}case (\w+): \{\n", generated_cases))
         tasks = []
         with tempfile.TemporaryDirectory() as tempdir:
             work = pathlib.Path(tempdir).resolve()
             async with asyncio.TaskGroup() as group:
                 coro = self._compile("trampoline", TOOLS_JIT / "trampoline.c", work)
                 tasks.append(group.create_task(coro, name="trampoline"))
-                template = TOOLS_JIT_TEMPLATE_C.read_text()
-                for case, opname in cases_and_opnames:
-                    # Write out a copy of the template with *only* this case
-                    # inserted. This is about twice as fast as #include'ing all
-                    # of executor_cases.c.h each time we compile (since the C
-                    # compiler wastes a bunch of time parsing the dead code for
-                    # all of the other cases):
-                    c = work / f"{opname}.c"
-                    c.write_text(template.replace("CASE", case))
-                    coro = self._compile(opname, c, work)
+                for opname in opnames:
+                    coro = self._compile(opname, TOOLS_JIT_TEMPLATE_C, work)
                     tasks.append(group.create_task(coro, name=opname))
         return {task.get_name(): task.result() for task in tasks}
 
@@ -234,7 +219,7 @@ class _Target(typing.Generic[_S, _R]):
                 if comment:
                     file.write(f"// {comment}\n")
                 file.write("\n")
-                for line in _writer.dump(stencil_groups, self.known_symbols):
+                for line in _writer.dump(stencil_groups):
                     file.write(f"{line}\n")
             try:
                 jit_stencils_new.replace(jit_stencils)
@@ -527,12 +512,7 @@ def get_target(host: str) -> _COFF | _ELF | _MachO:
         args = ["-fms-runtime-lib=dll"]
         target = _COFF(host, alignment=8, args=args)
     elif re.fullmatch(r"aarch64-.*-linux-gnu", host):
-        args = [
-            "-fpic",
-            # On aarch64 Linux, intrinsics were being emitted and this flag
-            # was required to disable them.
-            "-mno-outline-atomics",
-        ]
+        args = ["-fpic"]
         target = _ELF(host, alignment=8, args=args)
     elif re.fullmatch(r"i686-pc-windows-msvc", host):
         args = ["-DPy_NO_ENABLE_SHARED"]

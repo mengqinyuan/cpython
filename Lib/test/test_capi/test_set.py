@@ -265,7 +265,3 @@ class TestInternalCAPI(BaseSetTests, unittest.TestCase):
         with self.assertRaises(SystemError):
             set_next(object(), 0)
         # CRASHES: set_next(NULL, 0)
-
-
-if __name__ == "__main__":
-    unittest.main()

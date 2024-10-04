@@ -24,6 +24,8 @@ Here are some of the useful functions provided by this module:
     stack(), trace() - get info about frames on the stack or in a traceback
 
     signature() - get a Signature object for the callable
+
+    get_annotations() - safely compute an object's annotations
 """
 
 # This module is in the public domain.  No warranties.
@@ -140,7 +142,7 @@ __all__ = [
 
 
 import abc
-from annotationlib import get_annotations  # re-exported
+from annotationlib import get_annotations
 import ast
 import dis
 import collections.abc
@@ -970,12 +972,10 @@ def findsource(object):
 
     if isclass(object):
         try:
-            lnum = vars(object)['__firstlineno__'] - 1
-        except (TypeError, KeyError):
+            firstlineno = object.__firstlineno__
+        except AttributeError:
             raise OSError('source code not available')
-        if lnum >= len(lines):
-            raise OSError('lineno is out of bounds')
-        return lines, lnum
+        return lines, object.__firstlineno__ - 1
 
     if ismethod(object):
         object = object.__func__
@@ -1932,12 +1932,7 @@ def _signature_get_partial(wrapped_sig, partial, extra_args=()):
             if param.kind is _POSITIONAL_ONLY:
                 # If positional-only parameter is bound by partial,
                 # it effectively disappears from the signature
-                # However, if it is a Placeholder it is not removed
-                # And also looses default value
-                if arg_value is functools.Placeholder:
-                    new_params[param_name] = param.replace(default=_empty)
-                else:
-                    new_params.pop(param_name)
+                new_params.pop(param_name)
                 continue
 
             if param.kind is _POSITIONAL_OR_KEYWORD:
@@ -1959,17 +1954,7 @@ def _signature_get_partial(wrapped_sig, partial, extra_args=()):
                     new_params[param_name] = param.replace(default=arg_value)
                 else:
                     # was passed as a positional argument
-                    # Do not pop if it is a Placeholder
-                    #   also change kind to positional only
-                    #   and remove default
-                    if arg_value is functools.Placeholder:
-                        new_param = param.replace(
-                            kind=_POSITIONAL_ONLY,
-                            default=_empty
-                        )
-                        new_params[param_name] = new_param
-                    else:
-                        new_params.pop(param_name)
+                    new_params.pop(param.name)
                     continue
 
             if param.kind is _KEYWORD_ONLY:
@@ -2463,11 +2448,6 @@ def _signature_from_callable(obj, *,
                 sig_params = tuple(sig.parameters.values())
                 assert (not sig_params or
                         first_wrapped_param is not sig_params[0])
-                # If there were placeholders set,
-                #   first param is transformed to positional only
-                if partialmethod.args.count(functools.Placeholder):
-                    first_wrapped_param = first_wrapped_param.replace(
-                        kind=Parameter.POSITIONAL_ONLY)
                 new_params = (first_wrapped_param,) + sig_params
                 return sig.replace(parameters=new_params)
 

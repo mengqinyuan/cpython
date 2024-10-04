@@ -393,7 +393,7 @@ class EnvBuilder:
                         os.symlink(src, dest)
                         to_unlink.append(dest)
                     except OSError:
-                        logger.warning('Unable to symlink %r to %r', src, dest)
+                        logger.warning('Unable to symlink %r to %r', src, dst)
                         do_copies = True
                         for f in to_unlink:
                             try:

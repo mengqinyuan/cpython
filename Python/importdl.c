@@ -8,14 +8,14 @@
 #include "pycore_pystate.h"
 #include "pycore_runtime.h"
 
-#include "pycore_importdl.h"
-
 /* ./configure sets HAVE_DYNAMIC_LOADING if dynamic loading of modules is
    supported on this platform. configure will then compile and link in one
    of the dynload_*.c files, as appropriate. We will call a function in
    those modules to get a function pointer to the module's init function.
 */
 #ifdef HAVE_DYNAMIC_LOADING
+
+#include "pycore_importdl.h"
 
 #ifdef MS_WINDOWS
 extern dl_funcptr _PyImport_FindSharedFuncptrWindows(const char *prefix,
@@ -27,8 +27,6 @@ extern dl_funcptr _PyImport_FindSharedFuncptr(const char *prefix,
                                               const char *shortname,
                                               const char *pathname, FILE *fp);
 #endif
-
-#endif /* HAVE_DYNAMIC_LOADING */
 
 
 /***********************************/
@@ -207,7 +205,6 @@ _Py_ext_module_loader_info_init_for_core(
     return 0;
 }
 
-#ifdef HAVE_DYNAMIC_LOADING
 int
 _Py_ext_module_loader_info_init_from_spec(
                             struct _Py_ext_module_loader_info *p_info,
@@ -229,7 +226,6 @@ _Py_ext_module_loader_info_init_from_spec(
     Py_DECREF(filename);
     return err;
 }
-#endif /* HAVE_DYNAMIC_LOADING */
 
 
 /********************************/
@@ -376,7 +372,6 @@ _Py_ext_module_loader_result_apply_error(
 /* getting/running the module init function */
 /********************************************/
 
-#ifdef HAVE_DYNAMIC_LOADING
 PyModInitFunction
 _PyImport_GetModInitFunc(struct _Py_ext_module_loader_info *info,
                          FILE *fp)
@@ -411,7 +406,6 @@ _PyImport_GetModInitFunc(struct _Py_ext_module_loader_info *info,
 
     return (PyModInitFunction)exportfunc;
 }
-#endif /* HAVE_DYNAMIC_LOADING */
 
 int
 _PyImport_RunModInitFunc(PyModInitFunction p0,
@@ -519,3 +513,5 @@ error:
     p_res->err = &p_res->_err;
     return -1;
 }
+
+#endif /* HAVE_DYNAMIC_LOADING */

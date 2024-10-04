@@ -393,22 +393,13 @@ The :mod:`calendar` module exports the following data attributes:
 
 .. data:: day_name
 
-   A sequence that represents the days of the week in the current locale,
-   where Monday is day number 0.
-
-       >>> import calendar
-       >>> list(calendar.day_name)
-       ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+   An array that represents the days of the week in the current locale.
 
 
 .. data:: day_abbr
 
-   A sequence that represents the abbreviated days of the week in the current locale,
-   where Mon is day number 0.
+   An array that represents the abbreviated days of the week in the current locale.
 
-       >>> import calendar
-       >>> list(calendar.day_abbr)
-       ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
 .. data:: MONDAY
           TUESDAY
@@ -435,24 +426,17 @@ The :mod:`calendar` module exports the following data attributes:
 
 .. data:: month_name
 
-   A sequence that represents the months of the year in the current locale.  This
+   An array that represents the months of the year in the current locale.  This
    follows normal convention of January being month number 1, so it has a length of
    13 and  ``month_name[0]`` is the empty string.
-
-       >>> import calendar
-       >>> list(calendar.month_name)
-       ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
 
 .. data:: month_abbr
 
-   A sequence that represents the abbreviated months of the year in the current
+   An array that represents the abbreviated months of the year in the current
    locale.  This follows normal convention of January being month number 1, so it
    has a length of 13 and  ``month_abbr[0]`` is the empty string.
 
-       >>> import calendar
-       >>> list(calendar.month_abbr)
-       ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 .. data:: JANUARY
           FEBRUARY

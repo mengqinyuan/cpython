@@ -813,12 +813,7 @@ time_strftime(PyObject *module, PyObject *args)
         return NULL;
     }
 
-// Some platforms only support a limited range of years.
-//
-// Android works with negative years on the emulator, but fails on some
-// physical devices (#123017).
-#if defined(_MSC_VER) || (defined(__sun) && defined(__SVR4)) || defined(_AIX) \
-    || defined(__VXWORKS__) || defined(__ANDROID__)
+#if defined(_MSC_VER) || (defined(__sun) && defined(__SVR4)) || defined(_AIX) || defined(__VXWORKS__)
     if (buf.tm_year + 1900 < 1 || 9999 < buf.tm_year + 1900) {
         PyErr_SetString(PyExc_ValueError,
                         "strftime() requires year in [1; 9999]");
@@ -1293,14 +1288,9 @@ py_process_time(time_module_state *state, PyTime_t *tp,
 
     /* clock_gettime */
 // gh-115714: Don't use CLOCK_PROCESS_CPUTIME_ID on WASI.
-/* CLOCK_PROF is defined on NetBSD, but not supported.
- * CLOCK_PROCESS_CPUTIME_ID is broken on NetBSD for the same reason as
- * CLOCK_THREAD_CPUTIME_ID (see comment below).
- */
 #if defined(HAVE_CLOCK_GETTIME) \
     && (defined(CLOCK_PROCESS_CPUTIME_ID) || defined(CLOCK_PROF)) \
-    && !defined(__wasi__) \
-    && !defined(__NetBSD__)
+    && !defined(__wasi__)
     struct timespec ts;
 
     if (HAVE_CLOCK_GETTIME_RUNTIME) {
@@ -1493,16 +1483,9 @@ _PyTime_GetThreadTimeWithInfo(PyTime_t *tp, _Py_clock_info_t *info)
     return 0;
 }
 
-/* CLOCK_THREAD_CPUTIME_ID is broken on NetBSD: the result of clock_gettime()
- * includes the sleeping time, that defeats the purpose of the clock.
- * Also, clock_getres() does not support it.
- * https://github.com/python/cpython/issues/123978
- * https://gnats.netbsd.org/57512
- */
 #elif defined(HAVE_CLOCK_GETTIME) && \
-      defined(CLOCK_THREAD_CPUTIME_ID) && \
-      !defined(__EMSCRIPTEN__) && !defined(__wasi__) && \
-      !defined(__NetBSD__)
+      defined(CLOCK_PROCESS_CPUTIME_ID) && \
+      !defined(__EMSCRIPTEN__) && !defined(__wasi__)
 #define HAVE_THREAD_TIME
 
 #if defined(__APPLE__) && _Py__has_attribute(availability)

@@ -11,6 +11,7 @@ although there is currently no date scheduled for their removal.
 
 * :mod:`builtins`:
 
+  * ``~bool``, bitwise inversion on bool.
   * ``bool(NotImplemented)``.
   * Generators: ``throw(type, exc, tb)`` and ``athrow(type, exc, tb)``
     signature is deprecated: use ``throw(exc)`` and ``athrow(exc)`` instead,
@@ -65,9 +66,6 @@ although there is currently no date scheduled for their removal.
 
   * ``EntryPoints`` tuple interface.
   * Implicit ``None`` on return values.
-
-* :mod:`logging`: the ``warn()`` method has been deprecated
-  since Python 3.3, use :meth:`~logging.warning` instead.
 
 * :mod:`mailbox`: Use of StringIO input and text mode is deprecated, use
   BytesIO and binary mode instead.

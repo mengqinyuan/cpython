@@ -25,8 +25,6 @@ import re
 import csv
 
 SCRIPT_NAME = 'Tools/build/stable_abi.py'
-DEFAULT_MANIFEST_PATH = (
-    Path(__file__).parent / '../../Misc/stable_abi.toml').resolve()
 MISSING = object()
 
 EXCLUDED_HEADERS = {
@@ -643,9 +641,8 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        "file", type=Path, metavar='FILE', nargs='?',
-        default=DEFAULT_MANIFEST_PATH,
-        help=f"file with the stable abi manifest (default: {DEFAULT_MANIFEST_PATH})",
+        "file", type=Path, metavar='FILE',
+        help="file with the stable abi manifest",
     )
     parser.add_argument(
         "--generate", action='store_true',
@@ -687,7 +684,7 @@ def main():
 
     if args.list:
         for gen in generators:
-            print(f'{gen.arg_name}: {(base_path / gen.default_path).resolve()}')
+            print(f'{gen.arg_name}: {base_path / gen.default_path}')
         sys.exit(0)
 
     run_all_generators = args.generate_all
@@ -738,10 +735,8 @@ def main():
 
     if not results:
         if args.generate:
-            parser.error('No file specified. Use --generate-all to regenerate '
-                         + 'all files, or --help for usage.')
-        parser.error('No check specified. Use --all to check all files, '
-                     + 'or --help for usage.')
+            parser.error('No file specified. Use --help for usage.')
+        parser.error('No check specified. Use --help for usage.')
 
     failed_results = [name for name, result in results.items() if not result]
 

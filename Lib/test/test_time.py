@@ -654,7 +654,8 @@ class _TestStrftimeYear:
             self.test_year('%04d', func=year4d)
 
     def skip_if_not_supported(y):
-        msg = f"strftime() does not support year {y} on this platform"
+        msg = "strftime() is limited to [1; 9999] with Visual Studio"
+        # Check that it doesn't crash for year > 9999
         try:
             time.strftime('%Y', (y,) + (0,) * 8)
         except ValueError:

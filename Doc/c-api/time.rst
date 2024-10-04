@@ -1,7 +1,5 @@
 .. highlight:: c
 
-.. _c-api-time:
-
 PyTime C API
 ============
 

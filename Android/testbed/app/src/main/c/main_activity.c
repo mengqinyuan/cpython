@@ -84,7 +84,7 @@ static char *redirect_stream(StreamInfo *si) {
     return 0;
 }
 
-JNIEXPORT void JNICALL Java_org_python_testbed_PythonTestRunner_redirectStdioToLogcat(
+JNIEXPORT void JNICALL Java_org_python_testbed_MainActivity_redirectStdioToLogcat(
     JNIEnv *env, jobject obj
 ) {
     for (StreamInfo *si = STREAMS; si->file; si++) {
@@ -100,7 +100,7 @@ JNIEXPORT void JNICALL Java_org_python_testbed_PythonTestRunner_redirectStdioToL
 }
 
 
-// --- Python initialization ---------------------------------------------------
+// --- Python intialization ----------------------------------------------------
 
 static PyStatus set_config_string(
     JNIEnv *env, PyConfig *config, wchar_t **config_str, jstring value
@@ -115,7 +115,7 @@ static void throw_status(JNIEnv *env, PyStatus status) {
     throw_runtime_exception(env, status.err_msg ? status.err_msg : "");
 }
 
-JNIEXPORT int JNICALL Java_org_python_testbed_PythonTestRunner_runPython(
+JNIEXPORT void JNICALL Java_org_python_testbed_MainActivity_runPython(
     JNIEnv *env, jobject obj, jstring home, jstring runModule
 ) {
     PyConfig config;
@@ -125,13 +125,13 @@ JNIEXPORT int JNICALL Java_org_python_testbed_PythonTestRunner_runPython(
     status = set_config_string(env, &config, &config.home, home);
     if (PyStatus_Exception(status)) {
         throw_status(env, status);
-        return 1;
+        return;
     }
 
     status = set_config_string(env, &config, &config.run_module, runModule);
     if (PyStatus_Exception(status)) {
         throw_status(env, status);
-        return 1;
+        return;
     }
 
     // Some tests generate SIGPIPE and SIGXFSZ, which should be ignored.
@@ -140,8 +140,8 @@ JNIEXPORT int JNICALL Java_org_python_testbed_PythonTestRunner_runPython(
     status = Py_InitializeFromConfig(&config);
     if (PyStatus_Exception(status)) {
         throw_status(env, status);
-        return 1;
+        return;
     }
 
-    return Py_RunMain();
+    Py_RunMain();
 }

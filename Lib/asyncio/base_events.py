@@ -17,6 +17,7 @@ import collections
 import collections.abc
 import concurrent.futures
 import errno
+import functools
 import heapq
 import itertools
 import os
@@ -836,7 +837,7 @@ class BaseEventLoop(events.AbstractEventLoop):
 
     def _check_callback(self, callback, method):
         if (coroutines.iscoroutine(callback) or
-                coroutines._iscoroutinefunction(callback)):
+                coroutines.iscoroutinefunction(callback)):
             raise TypeError(
                 f"coroutines cannot be used with {method}()")
         if not callable(callback):
@@ -1139,18 +1140,11 @@ class BaseEventLoop(events.AbstractEventLoop):
                     except OSError:
                         continue
             else:  # using happy eyeballs
-                sock = (await staggered.staggered_race(
-                    (
-                        # can't use functools.partial as it keeps a reference
-                        # to exceptions
-                        lambda addrinfo=addrinfo: self._connect_sock(
-                            exceptions, addrinfo, laddr_infos
-                        )
-                        for addrinfo in infos
-                    ),
-                    happy_eyeballs_delay,
-                    loop=self,
-                ))[0]  # can't use sock, _, _ as it keeks a reference to exceptions
+                sock, _, _ = await staggered.staggered_race(
+                    (functools.partial(self._connect_sock,
+                                       exceptions, addrinfo, laddr_infos)
+                     for addrinfo in infos),
+                    happy_eyeballs_delay, loop=self)
 
             if sock is None:
                 exceptions = [exc for sub in exceptions for exc in sub]

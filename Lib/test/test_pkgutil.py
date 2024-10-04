@@ -624,11 +624,8 @@ class ImportlibMigrationTests(unittest.TestCase):
         mod = type(sys)(name)
         del mod.__spec__
         with CleanImport(name):
-            try:
-                sys.modules[name] = mod
-                loader = pkgutil.get_loader(name)
-            finally:
-                sys.modules.pop(name, None)
+            sys.modules[name] = mod
+            loader = pkgutil.get_loader(name)
         self.assertIsNone(loader)
 
     @ignore_warnings(category=DeprecationWarning)
@@ -637,11 +634,8 @@ class ImportlibMigrationTests(unittest.TestCase):
         mod = type(sys)(name)
         mod.__spec__ = None
         with CleanImport(name):
-            try:
-                sys.modules[name] = mod
-                loader = pkgutil.get_loader(name)
-            finally:
-                sys.modules.pop(name, None)
+            sys.modules[name] = mod
+            loader = pkgutil.get_loader(name)
         self.assertIsNone(loader)
 
     @ignore_warnings(category=DeprecationWarning)

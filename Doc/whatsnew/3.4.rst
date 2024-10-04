@@ -215,11 +215,12 @@ automatic ``PATH`` modifications to have ``pip`` available from the command
 line by default, otherwise it can still be accessed through the Python
 launcher for Windows as ``py -m pip``.
 
-As :pep:`discussed in the PEP <0453#recommendations-for-downstream-distributors>`
-platform packagers may choose not to install
+As `discussed in the PEP`__, platform packagers may choose not to install
 these commands by default, as long as, when invoked, they provide clear and
 simple directions on how to install them on that platform (usually using
 the system package manager).
+
+__ https://peps.python.org/pep-0453/#recommendations-for-downstream-distributors
 
 .. note::
 
@@ -1962,11 +1963,11 @@ Other Improvements
   <https://devguide.python.org/coverage/#measuring-coverage-of-c-code-with-gcov-and-lcov>`_
   will build python, run the test suite, and generate an HTML coverage report
   for the C codebase using ``gcov`` and `lcov
-  <https://github.com/linux-test-project/lcov>`_.
+  <https://ltp.sourceforge.net/coverage/lcov.php>`_.
 
 * The ``-R`` option to the :ref:`python regression test suite <regrtest>` now
   also checks for memory allocation leaks, using
-  :func:`sys.getallocatedblocks`.  (Contributed by Antoine Pitrou in
+  :func:`sys.getallocatedblocks()`.  (Contributed by Antoine Pitrou in
   :issue:`13390`.)
 
 * ``python -m`` now works with namespace packages.

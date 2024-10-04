@@ -56,10 +56,6 @@ interpreter.
       for jump targets and exception handlers. The ``-O`` command line
       option and the ``show_offsets`` argument were added.
 
-   .. versionchanged:: 3.14
-      The :option:`-P <dis --show-positions>` command-line option
-      and the ``show_positions`` argument were added.
-
 Example: Given the function :func:`!myfunc`::
 
    def myfunc(alist):
@@ -89,7 +85,7 @@ The :mod:`dis` module can be invoked as a script from the command line:
 
 .. code-block:: sh
 
-   python -m dis [-h] [-C] [-O] [-P] [infile]
+   python -m dis [-h] [-C] [-O] [infile]
 
 The following options are accepted:
 
@@ -107,10 +103,6 @@ The following options are accepted:
 
    Show offsets of instructions.
 
-.. cmdoption:: -P, --show-positions
-
-   Show positions of instructions in the source code.
-
 If :file:`infile` is specified, its disassembled code will be written to stdout.
 Otherwise, disassembly is performed on compiled source code received from stdin.
 
@@ -124,8 +116,7 @@ The bytecode analysis API allows pieces of Python code to be wrapped in a
 code.
 
 .. class:: Bytecode(x, *, first_line=None, current_offset=None,\
-                    show_caches=False, adaptive=False, show_offsets=False,\
-                    show_positions=False)
+                    show_caches=False, adaptive=False, show_offsets=False)
 
    Analyse the bytecode corresponding to a function, generator, asynchronous
    generator, coroutine, method, string of source code, or a code object (as
@@ -152,9 +143,6 @@ code.
 
    If *show_offsets* is ``True``, :meth:`.dis` will include instruction
    offsets in the output.
-
-   If *show_positions* is ``True``, :meth:`.dis` will include instruction
-   source code positions in the output.
 
    .. classmethod:: from_traceback(tb, *, show_caches=False)
 
@@ -184,12 +172,6 @@ code.
 
    .. versionchanged:: 3.11
       Added the *show_caches* and *adaptive* parameters.
-
-   .. versionchanged:: 3.13
-      Added the *show_offsets* parameter
-
-   .. versionchanged:: 3.14
-      Added the *show_positions* parameter.
 
 Example:
 
@@ -244,8 +226,7 @@ operation is being performed, so the intermediate analysis object isn't useful:
       Added *file* parameter.
 
 
-.. function:: dis(x=None, *, file=None, depth=None, show_caches=False,\
-                  adaptive=False, show_offsets=False, show_positions=False)
+.. function:: dis(x=None, *, file=None, depth=None, show_caches=False, adaptive=False)
 
    Disassemble the *x* object.  *x* can denote either a module, a class, a
    method, a function, a generator, an asynchronous generator, a coroutine,
@@ -284,14 +265,9 @@ operation is being performed, so the intermediate analysis object isn't useful:
    .. versionchanged:: 3.11
       Added the *show_caches* and *adaptive* parameters.
 
-   .. versionchanged:: 3.13
-      Added the *show_offsets* parameter.
 
-   .. versionchanged:: 3.14
-      Added the *show_positions* parameter.
-
-.. function:: distb(tb=None, *, file=None, show_caches=False, adaptive=False,\
-                    show_offset=False, show_positions=False)
+.. function:: distb(tb=None, *, file=None, show_caches=False, adaptive=False,
+                    show_offset=False)
 
    Disassemble the top-of-stack function of a traceback, using the last
    traceback if none was passed.  The instruction causing the exception is
@@ -309,20 +285,14 @@ operation is being performed, so the intermediate analysis object isn't useful:
    .. versionchanged:: 3.13
       Added the *show_offsets* parameter.
 
-   .. versionchanged:: 3.14
-      Added the *show_positions* parameter.
-
-.. function:: disassemble(code, lasti=-1, *, file=None, show_caches=False,\
-                          adaptive=False, show_offsets=False, show_positions=False)
-              disco(code, lasti=-1, *, file=None, show_caches=False, adaptive=False,\
-                    show_offsets=False, show_positions=False)
+.. function:: disassemble(code, lasti=-1, *, file=None, show_caches=False, adaptive=False)
+              disco(code, lasti=-1, *, file=None, show_caches=False, adaptive=False,
+              show_offsets=False)
 
    Disassemble a code object, indicating the last instruction if *lasti* was
    provided.  The output is divided in the following columns:
 
-   #. the source code location of the instruction. Complete location information
-      is shown if *show_positions* is true. Otherwise (the default) only the
-      line number is displayed.
+   #. the line number, for the first instruction of each line
    #. the current instruction, indicated as ``-->``,
    #. a labelled instruction, indicated with ``>>``,
    #. the address of the instruction,
@@ -344,9 +314,6 @@ operation is being performed, so the intermediate analysis object isn't useful:
 
    .. versionchanged:: 3.13
       Added the *show_offsets* parameter.
-
-   .. versionchanged:: 3.14
-      Added the *show_positions* parameter.
 
 .. function:: get_instructions(x, *, first_line=None, show_caches=False, adaptive=False)
 
@@ -959,7 +926,7 @@ iterations of the loop.
    list of constants supported by this instruction.  Used by the :keyword:`assert`
    statement to load :exc:`AssertionError`.
 
-   .. versionadded:: next
+   .. versionadded:: 3.14
 
 
 .. opcode:: LOAD_BUILD_CLASS
@@ -1119,8 +1086,8 @@ iterations of the loop.
       if count == 0:
           value = ()
       else:
-          value = tuple(STACK[-count:])
           STACK = STACK[:-count]
+          value = tuple(STACK[-count:])
 
       STACK.append(value)
 
@@ -1588,7 +1555,7 @@ iterations of the loop.
 
       end = STACK.pop()
       start = STACK.pop()
-      STACK.append(slice(start, end))
+      STACK.append(slice(start, stop))
 
    if it is 3, implements::
 
@@ -1826,7 +1793,7 @@ iterations of the loop.
    If ``type(STACK[-1]).__xxx__`` is not a method, leave
    ``STACK[-1].__xxx__; NULL`` on the stack.
 
-   .. versionadded:: next
+   .. versionadded:: 3.14
 
 
 **Pseudo-instructions**
@@ -1871,12 +1838,6 @@ but are replaced by real opcodes or removed before bytecode is generated.
 
    Undirected relative jump instructions which are replaced by their
    directed (forward/backward) counterparts by the assembler.
-
-.. opcode:: JUMP_IF_TRUE
-.. opcode:: JUMP_IF_FALSE
-
-   Conditional jumps which do not impact the stack. Replaced by the sequence
-   ``COPY 1``, ``TO_BOOL``, ``POP_JUMP_IF_TRUE/FALSE``.
 
 .. opcode:: LOAD_CLOSURE (i)
 

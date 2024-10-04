@@ -513,7 +513,6 @@ class TestSuper(unittest.TestCase):
         This should be the case anyways as our test suite sets
         an audit hook.
         """
-
         class Foo:
             pass
 
@@ -523,7 +522,7 @@ class TestSuper(unittest.TestCase):
         thing = Foo()
         def work():
             foo = thing
-            for _ in range(200):
+            for _ in range(5000):
                 foo.__class__ = Bar
                 type(foo)
                 foo.__class__ = Foo

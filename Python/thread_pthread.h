@@ -16,7 +16,6 @@
 #undef destructor
 #endif
 #include <signal.h>
-#include <unistd.h>             /* pause(), also getthrid() on OpenBSD */
 
 #if defined(__linux__)
 #   include <sys/syscall.h>     /* syscall(SYS_gettid) */
@@ -24,6 +23,8 @@
 #   include <pthread_np.h>      /* pthread_getthreadid_np() */
 #elif defined(__FreeBSD_kernel__)
 #   include <sys/syscall.h>     /* syscall(SYS_thr_self) */
+#elif defined(__OpenBSD__)
+#   include <unistd.h>          /* getthrid() */
 #elif defined(_AIX)
 #   include <sys/thread.h>      /* thread_self() */
 #elif defined(__NetBSD__)
@@ -416,18 +417,6 @@ PyThread_exit_thread(void)
 #else
     pthread_exit(0);
 #endif
-}
-
-void _Py_NO_RETURN
-PyThread_hang_thread(void)
-{
-    while (1) {
-#if defined(__wasi__)
-        sleep(9999999);  // WASI doesn't have pause() ?!
-#else
-        pause();
-#endif
-    }
 }
 
 #ifdef USE_SEMAPHORES

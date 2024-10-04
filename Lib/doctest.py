@@ -389,11 +389,11 @@ class _OutputRedirectingPdb(pdb.Pdb):
         # still use input() to get user input
         self.use_rawinput = 1
 
-    def set_trace(self, frame=None, *, commands=None):
+    def set_trace(self, frame=None):
         self.__debugger_used = True
         if frame is None:
             frame = sys._getframe().f_back
-        pdb.Pdb.set_trace(self, frame, commands=commands)
+        pdb.Pdb.set_trace(self, frame)
 
     def set_continue(self):
         # Calling set_continue unconditionally would break unit test

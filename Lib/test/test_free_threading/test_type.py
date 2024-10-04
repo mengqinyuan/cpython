@@ -97,8 +97,6 @@ class TestType(TestCase):
         self.run_one(writer_func, reader_func)
 
     def test___class___modification(self):
-        loops = 200
-
         class Foo:
             pass
 
@@ -108,7 +106,7 @@ class TestType(TestCase):
         thing = Foo()
         def work():
             foo = thing
-            for _ in range(loops):
+            for _ in range(5000):
                 foo.__class__ = Bar
                 type(foo)
                 foo.__class__ = Foo

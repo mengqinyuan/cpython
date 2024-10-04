@@ -29,9 +29,6 @@ extern int _PySys_SetAttr(PyObject *, PyObject *);
 extern int _PySys_ClearAttrString(PyInterpreterState *interp,
                                   const char *name, int verbose);
 
-extern int _PySys_SetFlagObj(Py_ssize_t pos, PyObject *new_value);
-extern int _PySys_SetIntMaxStrDigits(int maxdigits);
-
 #ifdef __cplusplus
 }
 #endif

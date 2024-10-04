@@ -30,7 +30,6 @@ def write_opcode_targets(analysis: Analysis, out: CWriter) -> None:
         out.emit(target)
     out.emit("};\n")
 
-
 arg_parser = argparse.ArgumentParser(
     description="Generate the file with dispatch targets.",
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
